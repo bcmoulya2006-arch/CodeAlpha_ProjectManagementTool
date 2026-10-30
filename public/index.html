@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PulseBoard | CodeAlpha Task 3 Project Management Tool</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <!-- Toast Notification Hub -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Main App Shell -->
+  <div class="app-shell">
+
+    <!-- LEFT SIDEBAR: Workspaces & Navigation -->
+    <aside class="sidebar-left">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon">
+            <i class="fa-solid fa-square-kanban"></i>
+          </div>
+          <div class="brand-info">
+            <span class="brand-name">Pulse<span class="accent">Board</span></span>
+            <span class="brand-subtitle">CodeAlpha Task 3</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Connection Status -->
+      <div class="ws-status-bar" id="ws-status">
+        <span class="status-dot online"></span>
+        <span class="status-label">Live WebSockets Connected</span>
+      </div>
+
+      <!-- Projects Section -->
+      <div class="sidebar-section">
+        <div class="section-header">
+          <span>PROJECTS</span>
+          <button class="icon-add-btn" id="open-new-project-btn" title="Create New Project">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
+        <div class="projects-list" id="sidebar-projects-list">
+          <div class="sidebar-loading">Loading projects...</div>
+        </div>
+      </div>
+
+      <!-- Project Collaborators Section -->
+      <div class="sidebar-section" id="project-members-section">
+        <div class="section-header">
+          <span>COLLABORATORS</span>
+          <button class="icon-add-btn" id="open-invite-member-btn" title="Invite Collaborator">
+            <i class="fa-solid fa-user-plus"></i>
+          </button>
+        </div>
+        <div class="members-list" id="sidebar-members-list">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Quick Demo Access Widget -->
+      <div class="sidebar-demo-box">
+        <div class="demo-title"><i class="fa-solid fa-bolt"></i> Quick Switch Demo User</div>
+        <div class="demo-btn-group">
+          <button class="demo-user-btn" data-user="manish_lead">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50" alt="Manish">
+            <span>Manish (Owner)</span>
+          </button>
+          <button class="demo-user-btn" data-user="alex_frontend">
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50" alt="Alex">
+            <span>Alex (Admin)</span>
+          </button>
+          <button class="demo-user-btn" data-user="sarah_backend">
+            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=50" alt="Sarah">
+            <span>Sarah (Member)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- User Profile / Auth Footer -->
+      <div class="sidebar-footer" id="sidebar-user-section">
+        <!-- Rendered via JS -->
+      </div>
+    </aside>
+
+    <!-- MAIN BOARD VIEW -->
+    <main class="main-viewport">
+      
+      <!-- Top Navigation Header -->
+      <header class="top-nav">
+        <div class="project-header-left">
+          <div class="project-color-badge" id="project-color-pill"></div>
+          <div>
+            <h1 class="project-title" id="current-project-title">Loading project...</h1>
+            <p class="project-desc" id="current-project-desc">Project board</p>
+          </div>
+        </div>
+
+        <div class="top-nav-controls">
+          <!-- Filter Search -->
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="task-filter-input" placeholder="Search tasks...">
+          </div>
+
+          <!-- Priority Filter -->
+          <select id="priority-filter" class="nav-select">
+            <option value="">All Priorities</option>
+            <option value="Urgent">Urgent</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+
+          <!-- Action Buttons -->
+          <button class="btn btn-primary" id="open-new-task-btn">
+            <i class="fa-solid fa-plus"></i>
+            <span>Add Task</span>
+          </button>
+
+          <button class="btn btn-outline" id="toggle-activity-sidebar-btn" title="Toggle Activity Log">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>Activity</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- KANBAN BOARD CONTAINER -->
+      <section class="kanban-board-container" id="kanban-board">
+        <div class="board-loading">
+          <div class="spinner"></div>
+          <p>Connecting to board & sync engine...</p>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- RIGHT DRAWER: Real-Time Activity Log -->
+    <aside class="activity-drawer" id="activity-drawer">
+      <div class="drawer-header">
+        <h3><i class="fa-solid fa-bolt"></i> Real-Time Activity</h3>
+        <button class="close-drawer-btn" id="close-activity-drawer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="activity-stream" id="activity-stream">
+        <!-- Populated via WebSocket & API -->
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- MODAL: Authentication (Login / Register) -->
+  <div id="auth-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <button class="modal-close-btn" id="auth-modal-close"><i class="fa-solid fa-xmark"></i></button>
+
+      <div class="modal-hero">
+        <div class="modal-hero-icon"><i class="fa-solid fa-square-kanban"></i></div>
+        <h2>Sign In to PulseBoard</h2>
+        <p>Collaborative project boards with real-time updates.</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-auth-login">Login</button>
+        <button class="auth-tab" id="tab-auth-register">Register</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form" class="modal-form">
+        <div class="form-group">
+          <label><i class="fa-solid fa-user"></i> Username or Email</label>
+          <input type="text" id="login-username" required placeholder="manish_lead or alex_frontend">
+        </div>
+        <div class="form-group">
+          <label><i class="fa-solid fa-lock"></i> Password</label>
+          <input type="password" id="login-password" required placeholder="Enter password (default: password123)">
+        </div>
+        <div class="form-error" id="login-error" style="display: none;"></div>
+        <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="register-form" class="modal-form" style="display: none;">
+        <div class="form-group">
+          <label><i class="fa-solid fa-signature"></i> Full Name</label>
+          <input type="text" id="register-name" required placeholder="e.g. Manish Kumar">
+        </div>
+        <div class="form-group">
+          <label><i class="fa-solid fa-at"></i> Username</label>
+          <input type="text" id="register-username" required placeholder="e.g. manish_dev">
+        </div>
+        <div class="form-group">
+          <label><i class="fa-solid fa-envelope"></i> Email Address</label>
+          <input type="email" id="register-email" required placeholder="name@company.com">
+        </div>
+        <div class="form-group">
+          <label><i class="fa-solid fa-lock"></i> Password (min 6 chars)</label>
+          <input type="password" id="register-password" required minlength="6" placeholder="Choose a secure password">
+        </div>
+        <div class="form-error" id="register-error" style="display: none;"></div>
+        <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Create New Project -->
+  <div id="new-project-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <button class="modal-close-btn" id="new-project-close"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-hero">
+        <div class="modal-hero-icon"><i class="fa-solid fa-folder-plus"></i></div>
+        <h2>Create Project Workspace</h2>
+        <p>Set up a collaborative Kanban board for your team.</p>
+      </div>
+
+      <form id="new-project-form" class="modal-form">
+        <div class="form-group">
+          <label>Project Title</label>
+          <input type="text" id="project-title-input" required placeholder="e.g. Mobile App Redesign 2026">
+        </div>
+        <div class="form-group">
+          <label>Description (Optional)</label>
+          <textarea id="project-desc-input" rows="2" placeholder="Brief mission statement or goals..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Board Theme Color</label>
+          <div class="color-picker-row">
+            <label class="color-choice"><input type="radio" name="project-color" value="#6366f1" checked><span style="background:#6366f1"></span></label>
+            <label class="color-choice"><input type="radio" name="project-color" value="#ec4899"><span style="background:#ec4899"></span></label>
+            <label class="color-choice"><input type="radio" name="project-color" value="#10b981"><span style="background:#10b981"></span></label>
+            <label class="color-choice"><input type="radio" name="project-color" value="#f59e0b"><span style="background:#f59e0b"></span></label>
+            <label class="color-choice"><input type="radio" name="project-color" value="#06b6d4"><span style="background:#06b6d4"></span></label>
+          </div>
+        </div>
+        <div class="form-error" id="new-project-error" style="display: none;"></div>
+        <button type="submit" class="btn btn-primary btn-block">Create Project Board</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Create Task Card -->
+  <div id="new-task-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <button class="modal-close-btn" id="new-task-close"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-hero">
+        <div class="modal-hero-icon"><i class="fa-solid fa-thumbtack"></i></div>
+        <h2>Create Task Card</h2>
+        <p>Add a new deliverable to your Kanban board.</p>
+      </div>
+
+      <form id="new-task-form" class="modal-form">
+        <div class="form-group">
+          <label>Task Title</label>
+          <input type="text" id="task-title-input" required placeholder="e.g. Build REST API for comments">
+        </div>
+        <div class="form-group">
+          <label>Workflow Column</label>
+          <select id="task-column-select" class="nav-select" required></select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Priority</label>
+            <select id="task-priority-select" class="nav-select">
+              <option value="Low">Low</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="High">High</option>
+              <option value="Urgent">Urgent</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Due Date</label>
+            <input type="date" id="task-due-date-input">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Assignee</label>
+          <select id="task-assignee-select" class="nav-select">
+            <option value="">Unassigned</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="task-desc-input" rows="3" placeholder="Context, requirements, and acceptance criteria..."></textarea>
+        </div>
+        <div class="form-error" id="new-task-error" style="display: none;"></div>
+        <button type="submit" class="btn btn-primary btn-block">Create Task</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Task Details & Interactive Comments -->
+  <div id="task-details-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card task-modal-wide">
+      <button class="modal-close-btn" id="task-details-close"><i class="fa-solid fa-xmark"></i></button>
+
+      <div class="task-modal-header">
+        <div class="task-modal-tags">
+          <span class="priority-pill" id="detail-priority-badge">Medium</span>
+          <span class="column-pill" id="detail-column-badge">In Progress</span>
+        </div>
+        <h2 id="detail-task-title" class="task-modal-title">Task Title</h2>
+        <div class="task-modal-meta">
+          <span>Created by <strong id="detail-creator-name">User</strong></span>
+          <span>•</span>
+          <span>Due <strong id="detail-due-date">No date</strong></span>
+        </div>
+      </div>
+
+      <div class="task-modal-body">
+        <!-- Left: Description & Details -->
+        <div class="task-details-col">
+          <div class="task-section">
+            <h4>Description</h4>
+            <p id="detail-task-desc" class="task-desc-box">Task description goes here...</p>
+          </div>
+
+          <div class="task-section">
+            <h4>Assignee</h4>
+            <div class="assignee-card" id="detail-assignee-box">
+              <img id="detail-assignee-avatar" class="avatar-sm" src="" alt="Avatar">
+              <span id="detail-assignee-name">Unassigned</span>
+            </div>
+          </div>
+
+          <div class="task-modal-actions">
+            <button class="btn btn-danger btn-sm" id="delete-task-btn">
+              <i class="fa-regular fa-trash-can"></i> Delete Task
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Interactive Comments Feed -->
+        <div class="task-comments-col">
+          <h4><i class="fa-regular fa-comments"></i> Discussion & Comments</h4>
+          
+          <div class="comments-stream" id="task-comments-stream">
+            <!-- Dynamic comments list -->
+          </div>
+
+          <form id="add-comment-form" class="comment-input-form">
+            <input type="text" id="new-comment-input" placeholder="Write a comment or update..." required>
+            <button type="submit" class="btn btn-primary btn-sm">Reply</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Invite Collaborator -->
+  <div id="invite-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <button class="modal-close-btn" id="invite-modal-close"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-hero">
+        <div class="modal-hero-icon"><i class="fa-solid fa-user-plus"></i></div>
+        <h2>Invite Team Member</h2>
+        <p>Add a collaborator to this project workspace.</p>
+      </div>
+
+      <form id="invite-member-form" class="modal-form">
+        <div class="form-group">
+          <label>Username or Email</label>
+          <input type="text" id="invite-user-input" required placeholder="alex_frontend or sarah@codealpha.tech">
+        </div>
+        <div class="form-group">
+          <label>Project Role</label>
+          <select id="invite-role-select" class="nav-select">
+            <option value="member" selected>Member (Can view, create & move tasks)</option>
+            <option value="admin">Admin (Can manage settings and invite)</option>
+          </select>
+        </div>
+        <div class="form-error" id="invite-error" style="display: none;"></div>
+        <button type="submit" class="btn btn-primary btn-block">Add Collaborator</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/js/api.js"></script>
+  <script src="/js/ws.js"></script>
+  <script src="/js/state.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
